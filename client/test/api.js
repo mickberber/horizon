@@ -25,7 +25,7 @@ describe('Core API tests', () => {
   // Set up the horizon connection before running these tests.
   before(done => {
     Horizon.clearAuthTokens()
-    horizon = Horizon({ secure: false, lazyWrites: true })
+    horizon = Horizon({ lazyWrites: true })
     horizon.connect(err => done(err))
     horizon.onReady(() => {
       data = horizon('test_data')
@@ -108,6 +108,8 @@ describe('Core API tests', () => {
     describe('Testing `below` subscriptions', belowSubscriptionSuite(getData))
     describe('Testing `order.limit` subscriptions', orderLimitSubSuite(getData))
   }) // Test the subscriptions API
+
+  describe('Model api', modelSuite(getData, getHorizon))
 
   describe('Unit tests', () => {
     describe('Auth', authSuite)
