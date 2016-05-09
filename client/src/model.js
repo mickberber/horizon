@@ -130,6 +130,10 @@ export function aggregate(aggregateSpec) {
   } else if (isPlainObject(aggregateSpec)) {
     return new AggregateSpec(aggregateSpec)
   } else {
-    throw new Error(`Can't make an aggregate with ${aggregateSpec} in it`)
+    throw new Error(`Can\'t make an aggregate with ${aggregateSpec} in it`)
   }
+}
+
+export function model(constructor) {
+  return (...args) => aggregate(constructor(...args))
 }
