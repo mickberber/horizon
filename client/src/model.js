@@ -19,7 +19,7 @@ import { isRecursivelyPrimitive } from './util/is-recursively-primitive'
 // for aggregates
 function checkWatchArgs(args) {
   if (args.length > 0) {
-    throw new Error(".watch() on models doesn't support arguments!")
+    throw new Error(".watch() on aggregates doesn't support arguments!")
   }
 }
 
@@ -50,7 +50,7 @@ class PrimitiveSpec {
 }
 
 // Simple wrapper for observables to normalize the
-// interface. Everything in a model tree should be one of these
+// interface. Everything in an aggregate tree should be one of these
 // term-likes
 class ObservableSpec {
   constructor(value) {
@@ -67,11 +67,11 @@ class ObservableSpec {
   }
 }
 
-// Handles model syntax like [ query1, query2 ]
+// Handles aggregate syntax like [ query1, query2 ]
 class ArraySpec {
   constructor(queries) {
     // Ensure this._queries is an array of observables
-    this._subqueries = queries.map(x => model(x))
+    this._subqueries = queries.map(x => aggregate(x))
   }
 
   fetch() {
@@ -90,14 +90,14 @@ class ArraySpec {
   }
 }
 
-class ModelSpec {
-  constructor(modelObject) {
-    this._modelKeys = Object.keys(modelObject).map(key =>
-      [ key, model(modelObject[key]) ])
+class AggregateSpec {
+  constructor(aggregateObject) {
+    this._aggregateKeys = Object.keys(aggregateObject).map(key =>
+      [ key, aggregate(aggregateObject[key]) ])
   }
 
   fetch() {
-    const observs = this._modelKeys.map(([ k, term ]) => {
+    const observs = this._aggregateKeys.map(([ k, term ]) => {
       // We jam the key into the observable so when it emits we know
       // where to put it in the object
       return term.fetch()::map(val => [ k, val ])
@@ -118,18 +118,18 @@ class ModelSpec {
   }
 }
 
-export function model(modelSpec) {
-  if (hasTermInterface(modelSpec)) {
-    return modelSpec
-  } else if (hasObservableInterface(modelSpec)) {
-    return new ObservableSpec(modelSpec)
-  } else if (isRecursivelyPrimitive(modelSpec)) {
-    return new PrimitiveSpec(modelSpec)
-  } else if (Array.isArray(modelSpec)) {
-    return new ArraySpec(modelSpec)
-  } else if (isPlainObject(modelSpec)) {
-    return new ModelSpec(modelSpec)
+export function aggregate(aggregateSpec) {
+  if (hasTermInterface(aggregateSpec)) {
+    return aggregateSpec
+  } else if (hasObservableInterface(aggregateSpec)) {
+    return new ObservableSpec(aggregateSpec)
+  } else if (isRecursivelyPrimitive(aggregateSpec)) {
+    return new PrimitiveSpec(aggregateSpec)
+  } else if (Array.isArray(aggregateSpec)) {
+    return new ArraySpec(aggregateSpec)
+  } else if (isPlainObject(aggregateSpec)) {
+    return new AggregateSpec(aggregateSpec)
   } else {
-    throw new Error(`Can't make a model with ${modelSpec} in it`)
+    throw new Error(`Can't make an aggregate with ${aggregateSpec} in it`)
   }
 }

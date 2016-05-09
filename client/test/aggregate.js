@@ -19,7 +19,7 @@ function arrayHasSameElements(a, b) {
   }
 }
 
-const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
+const aggregateSuite = window.aggregateSuite = (getData, getHorizon) => () => {
   let data, horizon, hzA, hzB
   before(() => {
     data = getData()
@@ -38,7 +38,6 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
       })
   })
 
-  // A model can just consist of a subquery
   it('is equivalent to a subquery if it is not passed an object',
      assertCompletes(() => {
        const underlyingQuery = data.order('id').limit(3)
@@ -48,7 +47,7 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
          { id: 3 },
          { id: 4 },
        ])::concat(observableInterleave({
-         query: horizon.model(underlyingQuery).fetch(),
+         query: horizon.aggregate(underlyingQuery).fetch(),
          operations: [],
          expected: [
            [ { id: 1 }, { id: 2 }, { id: 3 } ],
@@ -59,7 +58,7 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
 
   it('combines multiple queries in an array into one',
      assertCompletes(() => {
-       const query = horizon.model([ hzA, hzB ]).fetch()
+       const query = horizon.aggregate([ hzA, hzB ]).fetch()
        const expected = [
          { id: 1 },
          { id: 2 },
@@ -82,7 +81,7 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
     )
 
   it('allows constants in an array spec', assertCompletes(() => {
-    const query = horizon.model([ 1, hzA ]).fetch()
+    const query = horizon.aggregate([ 1, hzA ]).fetch()
     const expected = [ 1, { id: 1 }, { id: 2 } ]
     return hzA.insert([
       { id: 1 },
@@ -95,8 +94,8 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
     }))
   }))
 
-  it('allows a fully constant model of primitives', assertCompletes(() => {
-    const model = {
+  it('allows a fully constant aggregate of primitives', assertCompletes(() => {
+    const aggregate = {
       a: 'Some string',
       b: [ true ],
       c: new Date(),
@@ -106,12 +105,12 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
         g: [ 1.3, true, new Date(), { } ],
       },
     }
-    const query = horizon.model(model).fetch()
+    const query = horizon.aggregate(aggregate).fetch()
     return observableInterleave({
       query,
       operations: [],
       equality: assert.deepEqual,
-      expected: [ model ],
+      expected: [ aggregate ],
     })
   }))
 
@@ -128,7 +127,7 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
       { id: 7, g: 'G' },
       { id: 8, h: 'H' },
     ]
-    const query = horizon.model({
+    const query = horizon.aggregate({
       item1: hzA.find(1),
       item2: hzB.above({ id: 5 }).below({ id: 8 }),
     }).fetch()
@@ -163,7 +162,7 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
     }
     return hzA.insert(hzAContents)
       ::concat(observableInterleave({
-        query: horizon.model({
+        query: horizon.aggregate({
           a: hzA.find(1),
           b: constantObservable,
           c: regularConstant,
@@ -172,5 +171,47 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
         equality: assert.deepEqual,
         expected: [ expectedResult ],
       }))
+  }))
+
+  it('allows nested aggregates with queries at different levels',
+     assertCompletes(() => {
+       const hzAContents = [
+         { id: 1, contents: 'a' },
+         { id: 2, contents: 'b' },
+         { id: 3, contents: 'c' },
+       ]
+       const hzBContents = [
+         { id: 4, contents: 'd' },
+         { id: 5, contents: 'e' },
+         { id: 6, contents: 'f' },
+       ]
+       const query = horizon.aggregate({
+         a: hzA.find(1),
+         b: {
+           c: hzB.find(4),
+           d: hzB.find(5),
+           e: {
+             f: [ hzA.find(2), hzA.find(3) ],
+           },
+         },
+       }).fetch()
+       const expectedResult = {
+         a: { id: 1, contents: 'a' },
+         b: {
+           c: { id: 4, contents: 'd' },
+           d: { id: 5, contents: 'e' },
+           e: {
+             f: [ { id: 2, contents: 'b' }, { id: 3, contents: 'c' } ],
+           },
+         },
+       }
+       return hzA.insert(hzAContents)
+       ::concat(hzB.insert(hzBContents))
+       ::concat(observableInterleave({
+         query,
+         operations: [],
+         equality: assert.deepEqual,
+         expected: [ expectedResult ],
+       }))
   }))
 }

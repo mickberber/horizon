@@ -8,7 +8,7 @@ const { Collection } = require('./ast.js')
 const HorizonSocket = require('./socket.js')
 const { log, logError, enableLogging } = require('./logging.js')
 const { authEndpoint, TokenStorage, clearAuthTokens } = require('./auth')
-const { model } = require('./model')
+const { aggregate } = require('./model')
 
 const defaultHost = typeof window !== 'undefined' && window.location &&
         `${window.location.host}` || 'localhost:8181'
@@ -92,7 +92,7 @@ function Horizon({
   horizon._horizonPath = path
   horizon.authEndpoint = authEndpoint
   horizon.hasAuthToken = ::tokenStorage.hasAuthToken
-  horizon.model = model
+  horizon.aggregate = aggregate
 
   return horizon
 

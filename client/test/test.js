@@ -98,7 +98,7 @@ require('./auth.js')
 require('./utilsTest.js')
 
 // Model tests
-require('./model.js')
+require('./aggregate.js')
 
 // Load the suite runner
 require('./api.js')
