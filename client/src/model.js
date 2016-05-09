@@ -28,6 +28,11 @@ function hasTermInterface(possibleTerm) {
          typeof possibleTerm.watch === 'function'
 }
 
+function hasObservableInterface(possibleObservable) {
+  return typeof possibleObservable.subscribe === 'function' &&
+         typeof possibleObservable.lift === 'function'
+}
+
 // Simple wrapper for primitives. Just emits the primitive
 class PrimitiveSpec {
   constructor(value) {
@@ -116,8 +121,8 @@ class ModelSpec {
 export function model(modelSpec) {
   if (hasTermInterface(modelSpec)) {
     return modelSpec
-  } else if (modelSpec instanceof Observable) {
-    return ObservableSpec(modelSpec)
+  } else if (hasObservableInterface(modelSpec)) {
+    return new ObservableSpec(modelSpec)
   } else if (isRecursivelyPrimitive(modelSpec)) {
     return new PrimitiveSpec(modelSpec)
   } else if (Array.isArray(modelSpec)) {

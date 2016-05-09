@@ -1,9 +1,12 @@
 import { Observable } from 'rxjs/Observable'
 import { merge } from 'rxjs/observable/merge'
+import { of } from 'rxjs/observable/of'
 
 import { concat } from 'rxjs/operator/concat'
 
-import { assertCompletes, removeAllDataObs, observableInterleave } from './utils'
+import { assertCompletes,
+         removeAllDataObs,
+         observableInterleave } from './utils'
 
 // Raises an exception if corresponding elements in an array don't
 // have the same elements (in any order)
@@ -144,5 +147,30 @@ const modelSuite = window.modelSuite = (getData, getHorizon) => () => {
       equality: assert.deepEqual,
       expected: [ expectedResult ],
     }))
+  }))
+
+  it('allows observables in aggregates', assertCompletes(() => {
+    const hzAContents = [
+      { id: 1, foo: true },
+    ]
+    const constantObservable = Observable::of({ id: 2, foo: false })
+    assert.instanceOf(constantObservable, Observable)
+    const regularConstant = { id: 3, foo: true }
+    const expectedResult = {
+      a: { id: 1, foo: true },
+      b: { id: 2, foo: false },
+      c: { id: 3, foo: true },
+    }
+    return hzA.insert(hzAContents)
+      ::concat(observableInterleave({
+        query: horizon.model({
+          a: hzA.find(1),
+          b: constantObservable,
+          c: regularConstant,
+        }).fetch(),
+        operations: [],
+        equality: assert.deepEqual,
+        expected: [ expectedResult ],
+      }))
   }))
 }
