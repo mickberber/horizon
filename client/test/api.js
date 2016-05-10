@@ -109,7 +109,10 @@ describe('Core API tests', () => {
     describe('Testing `order.limit` subscriptions', orderLimitSubSuite(getData))
   }) // Test the subscriptions API
 
-  describe('Aggregate api', aggregateSuite(getData, getHorizon))
+  describe('Aggregate API', () => {
+    describe('fetch', aggregateSuite(getData, getHorizon))
+    describe('watch', aggregateSubSuite(getData, getHorizon))
+  })
 
   describe('Unit tests', () => {
     describe('Auth', authSuite)

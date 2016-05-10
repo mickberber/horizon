@@ -34,7 +34,7 @@ function hasObservableInterface(possibleObservable) {
 }
 
 // Simple wrapper for primitives. Just emits the primitive
-class PrimitiveSpec {
+class PrimitiveTerm {
   constructor(value) {
     this._value = value
   }
@@ -52,7 +52,7 @@ class PrimitiveSpec {
 // Simple wrapper for observables to normalize the
 // interface. Everything in an aggregate tree should be one of these
 // term-likes
-class ObservableSpec {
+class ObservableTerm {
   constructor(value) {
     this._obs = value
   }
@@ -68,7 +68,7 @@ class ObservableSpec {
 }
 
 // Handles aggregate syntax like [ query1, query2 ]
-class ArraySpec {
+class ArrayTerm {
   constructor(queries) {
     // Ensure this._queries is an array of observables
     this._subqueries = queries.map(x => aggregate(x))
@@ -90,7 +90,7 @@ class ArraySpec {
   }
 }
 
-class AggregateSpec {
+class AggregateTerm {
   constructor(aggregateObject) {
     this._aggregateKeys = Object.keys(aggregateObject).map(key =>
       [ key, aggregate(aggregateObject[key]) ])
@@ -114,7 +114,16 @@ class AggregateSpec {
 
   watch() {
     checkWatchArgs(arguments)
-    throw new Error('watch unimplemented')
+    const observs = this._aggregateKeys.map(([ k, term ]) => {
+      return term.watch()::map(val => [ k, val ])
+    })
+    return Observable::combineLatest(...observs, (...keyVals) => {
+      const finalObject = {}
+      for (const [ key, val ] of keyVals) {
+        finalObject[key] = val
+      }
+      return finalObject
+    })
   }
 }
 
@@ -122,13 +131,13 @@ export function aggregate(aggregateSpec) {
   if (hasTermInterface(aggregateSpec)) {
     return aggregateSpec
   } else if (hasObservableInterface(aggregateSpec)) {
-    return new ObservableSpec(aggregateSpec)
+    return new ObservableTerm(aggregateSpec)
   } else if (isRecursivelyPrimitive(aggregateSpec)) {
-    return new PrimitiveSpec(aggregateSpec)
+    return new PrimitiveTerm(aggregateSpec)
   } else if (Array.isArray(aggregateSpec)) {
-    return new ArraySpec(aggregateSpec)
+    return new ArrayTerm(aggregateSpec)
   } else if (isPlainObject(aggregateSpec)) {
-    return new AggregateSpec(aggregateSpec)
+    return new AggregateTerm(aggregateSpec)
   } else {
     throw new Error(`Can\'t make an aggregate with ${aggregateSpec} in it`)
   }

@@ -99,6 +99,7 @@ require('./utilsTest.js')
 
 // Model tests
 require('./aggregate.js')
+require('./aggregateSub.js')
 
 // Load the suite runner
 require('./api.js')
