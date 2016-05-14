@@ -3,6 +3,7 @@ import { merge } from 'rxjs/observable/merge'
 import { of } from 'rxjs/observable/of'
 
 import { concat } from 'rxjs/operator/concat'
+import { _catch as rescue } from 'rxjs/operator/catch'
 
 import { assertCompletes,
          removeAllDataObs,
@@ -28,10 +29,10 @@ const aggregateSuite = window.aggregateSuite = (getData, getHorizon) => () => {
     hzB = horizon('testB')
   })
   afterEach(done => {
-    Observable::merge(
-      removeAllDataObs(hzA),
-      removeAllDataObs(hzB),
-      removeAllDataObs(data)).subscribe({
+    removeAllDataObs(data)
+    ::concat(removeAllDataObs(hzA))
+    ::concat(removeAllDataObs(hzB))
+      .subscribe({
         next() { },
         error(err) { done(err) },
         complete() { done() },

@@ -40,7 +40,7 @@ describe('Core API tests', () => {
   })
 
   // Test the mutation commands
-  describe('Storage API', () => {
+  describe('Write API', () => {
     // Drop all data after each test
     afterEach(done => removeAllData(data, done))
 
@@ -50,12 +50,13 @@ describe('Core API tests', () => {
     describe('Testing `update`', updateSuite(getData))
     describe('Testing `replace`', replaceSuite(getData))
   }) // Storage API
-  describe('Testing `remove`', removeSuite(getData))
-  describe('Testing `removeAll`', removeAllSuite(getData))
+  describe('Remove API', () => {
+    describe('Testing `remove`', removeSuite(getData))
+    describe('Testing `removeAll`', removeAllSuite(getData))
+  })
 
-  describe('Testing `times`', timesSuite(getData))
   // Test the lookup API
-  describe('Lookup API', () => {
+  describe('Fetch API', () => {
     const testData = [
       { id: 1, a: 10 },
       { id: 2, a: 20, b: 1 },
@@ -95,7 +96,7 @@ describe('Core API tests', () => {
   }) // Test the lookup API
 
   // Test the subscriptions API
-  describe('Subscriptions API', () => {
+  describe('Watch API', () => {
 
     // Drop all the existing data
     beforeEach(done => {
@@ -108,6 +109,9 @@ describe('Core API tests', () => {
     describe('Testing `below` subscriptions', belowSubscriptionSuite(getData))
     describe('Testing `order.limit` subscriptions', orderLimitSubSuite(getData))
   }) // Test the subscriptions API
+  describe('Serialization', () => {
+    describe('Testing `times`', timesSuite(getData))
+  })
 
   describe('Aggregate API', () => {
     describe('fetch', aggregateSuite(getData, getHorizon))

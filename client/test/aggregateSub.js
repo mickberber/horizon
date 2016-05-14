@@ -3,11 +3,17 @@ import { merge } from 'rxjs/observable/merge'
 import { of } from 'rxjs/observable/of'
 
 import { concat } from 'rxjs/operator/concat'
+import { ignoreElements } from 'rxjs/operator/ignoreElements'
+import { take } from 'rxjs/operator/take'
 import { _do as tap } from 'rxjs/operator/do'
 
 import { assertCompletes,
          removeAllDataObs,
          observableInterleave } from './utils'
+
+function andThen(obs) {
+  return this::ignoreElements()::concat(obs)
+}
 
 const aggregateSubSuite = window.aggregateSubSuite = (getData, getHorizon) => () => {
   let data, horizon, hzA, hzB
@@ -46,28 +52,32 @@ const aggregateSubSuite = window.aggregateSubSuite = (getData, getHorizon) => ()
      })
     )
 
-  it('combines multiple queries in an array into one',
-     assertCompletes(() => {
-       const query = horizon.aggregate([ hzA, hzB ]).watch()
-       const expected = [
-         { id: 1 },
-         { id: 2 },
-         { id: 3 },
-         { id: 4 },
-       ]
-       return hzA.insert([
-         { id: 1 },
-         { id: 3 },
-       ])::concat(hzB.insert([
-         { id: 2 },
-         { id: 4 },
-       ]))::concat(observableInterleave({
-         query,
-         operations: [],
-         expected: [ expected ],
-       })::tap(x => console.log('tapped', x)))
-     })
-    )
+  it('combines multiple queries in an array into one', done => {
+    const query = horizon.aggregate([ hzA, hzB ]).watch()
+    const expected = [
+      { id: 1 },
+      { id: 2 },
+      { id: 3 },
+      { id: 4 },
+    ]
+    return hzA.insert([
+      { id: 1 },
+      { id: 3 },
+    ])::andThen(hzB.insert([
+      { id: 2 },
+      { id: 4 },
+    ]))::andThen(query)
+    ::take(1)
+    ::tap(obtained => {
+      assert.deepEqual(expected, obtained)
+    }).subscribe({
+      next(x) {
+        assert.deepEqual(expected, obtained)
+      },
+      error(err) { done(new Error(err)) },
+      complete() { done() }
+    })
+  })
 
   it('allows constants in an array spec', assertCompletes(() => {
     const query = horizon.aggregate([ 1, hzA ]).watch()
