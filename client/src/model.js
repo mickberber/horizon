@@ -5,9 +5,9 @@ import { of } from 'rxjs/observable/of'
 import { forkJoin } from 'rxjs/observable/forkJoin'
 
 // Observable operators
-import { combineLatest } from 'rxjs/operator/combineLatest'
 import { map } from 'rxjs/operator/map'
 import { _do as tap } from 'rxjs/operator/do'
+import { combineLatest } from 'rxjs/operator/combineLatest'
 
 // Other imports
 import isPlainObject from 'is-plain-object'
@@ -39,6 +39,10 @@ class PrimitiveTerm {
     this._value = value
   }
 
+  toString() {
+    return this._value.toString()
+  }
+
   fetch() {
     return Observable::of(this._value)
   }
@@ -55,6 +59,10 @@ class PrimitiveTerm {
 class ObservableTerm {
   constructor(value) {
     this._obs = value
+  }
+
+  toString() {
+    return this._obs.toString()
   }
 
   fetch() {
@@ -74,6 +82,10 @@ class ArrayTerm {
     this._subqueries = queries.map(x => aggregate(x))
   }
 
+  toString() {
+    return `[ ${this._subqueries.map(x => x.toString()).join(', ')} ]`
+  }
+
   fetch() {
     // Convert each query to an observable
     const qs = this._subqueries.map(x => x.fetch())
@@ -85,8 +97,18 @@ class ArrayTerm {
   watch() {
     checkWatchArgs(arguments)
     const qs = this._subqueries.map(x => x.watch())
-    return Observable::combineLatest(...qs,
-      args => Array.prototype.concat(...args))
+    if (qs.length === 0) {
+      return Observable.empty()
+    } else if (qs.length === 1) {
+      return qs[0]
+    } else {
+      const headQuery = qs[0]
+      const tailQueries = qs.slice(1)
+      return headQuery::combineLatest(...tailQueries, args => {
+        console.log('args', args)
+        return Array.prototype.concat(...args)
+      })
+    }
   }
 }
 
@@ -94,6 +116,15 @@ class AggregateTerm {
   constructor(aggregateObject) {
     this._aggregateKeys = Object.keys(aggregateObject).map(key =>
       [ key, aggregate(aggregateObject[key]) ])
+  }
+
+  toString() {
+    let string = '{'
+    this._aggregateKeys.forEach(([k, v]) => {
+      string += ` '${k}': ${v},`
+    })
+    string += ' }'
+    return string
   }
 
   fetch() {

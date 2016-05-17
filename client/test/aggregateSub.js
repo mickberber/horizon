@@ -53,7 +53,7 @@ const aggregateSubSuite = window.aggregateSubSuite = (getData, getHorizon) => ()
     )
 
   it('combines multiple queries in an array into one', done => {
-    const query = horizon.aggregate([ hzA, hzB ]).watch()
+    const query = horizon.aggregate([ hzA, hzB ])
     const expected = [
       { id: 1 },
       { id: 2 },
@@ -66,15 +66,18 @@ const aggregateSubSuite = window.aggregateSubSuite = (getData, getHorizon) => ()
     ])::andThen(hzB.insert([
       { id: 2 },
       { id: 4 },
-    ]))::andThen(query)
+    ]))::andThen(query.watch())
     ::take(1)
     ::tap(obtained => {
-      assert.deepEqual(expected, obtained)
+      console.log('Obtained:', obtained)
+      console.log('Query: ' + query)
     }).subscribe({
       next(x) {
-        assert.deepEqual(expected, obtained)
+        assert.deepEqual(expected, x)
       },
-      error(err) { done(new Error(err)) },
+      error(err) {
+        done(new Error(err))
+      },
       complete() { done() }
     })
   })
